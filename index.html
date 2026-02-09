@@ -1,4 +1,1555 @@
-if (isToday) {
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Discipline Pro">
+    <meta name="theme-color" content="#0f0f0f">
+    <title>Discipline Pro - Контроль дня</title>
+    <style>
+        :root {
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #242424;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7c3aed;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --gradient-5: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --glass: rgba(255, 255, 255, 0.05);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 100px;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.15;
+            top: -200px;
+            right: -200px;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-animation::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.1;
+            bottom: -200px;
+            left: -200px;
+            animation: float 25s infinite ease-in-out reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-top: 50px;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 25px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .greeting {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--accent-primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .date-badge {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+
+        .stat-card.large {
+            grid-column: span 2;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+        }
+
+        .stat-card.sleep::before { background: var(--gradient-2); }
+        .stat-card.water::before { background: var(--gradient-3); }
+        .stat-card.food::before { background: var(--gradient-4); }
+        .stat-card.work::before { background: var(--gradient-5); }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 12px;
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-card.sleep .stat-icon { background: rgba(240, 147, 251, 0.2); }
+        .stat-card.water .stat-icon { background: rgba(79, 172, 254, 0.2); }
+        .stat-card.food .stat-icon { background: rgba(67, 233, 123, 0.2); }
+        .stat-card.work .stat-icon { background: rgba(250, 112, 154, 0.2); }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-progress {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .stat-progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .stat-card.discipline .stat-progress-bar { background: var(--gradient-1); }
+        .stat-card.sleep .stat-progress-bar { background: var(--gradient-2); }
+        .stat-card.water .stat-progress-bar { background: var(--gradient-3); }
+        .stat-card.food .stat-progress-bar { background: var(--gradient-4); }
+        .stat-card.work .stat-progress-bar { background: var(--gradient-5); }
+
+        .stat-change {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive { color: var(--accent-success); }
+        .stat-change.negative { color: var(--accent-danger); }
+
+        /* Main Score Circle */
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 15px;
+            position: relative;
+        }
+
+        .score-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .score-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.1);
+            stroke-width: 8;
+        }
+
+        .score-fill {
+            fill: none;
+            stroke: url(#gradient);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 339.292;
+            stroke-dashoffset: 339.292;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .score-number {
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-action {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--accent-primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .section-action:active {
+            transform: scale(0.95);
+            background: var(--accent-primary);
+            color: #000;
+        }
+
+        /* Routine Cards */
+        .routine-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .routine-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .routine-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .routine-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .routine-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: var(--gradient-1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .routine-card.sleep .routine-icon { background: var(--gradient-2); box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3); }
+        .routine-card.water .routine-icon { background: var(--gradient-3); box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3); }
+        .routine-card.food .routine-icon { background: var(--gradient-4); box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3); }
+        .routine-card.work .routine-icon { background: var(--gradient-5); box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3); }
+
+        .routine-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .routine-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .routine-toggle {
+            width: 56px;
+            height: 32px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .routine-toggle.active {
+            background: var(--accent-success);
+        }
+
+        .routine-toggle::after {
+            content: '';
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .routine-toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        .routine-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-btn {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+            background: var(--accent-primary);
+            color: #000;
+        }
+
+        .control-btn.minus { color: var(--accent-danger); }
+        .control-btn.plus { color: var(--accent-success); }
+
+        .control-value {
+            min-width: 60px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Tasks Section */
+        .tasks-container {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .task-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .task-input {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .task-input:focus {
+            border-color: var(--accent-primary);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .task-add-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-add-btn:active {
+            transform: scale(0.9);
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s;
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .task-checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--text-muted);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .task-item.completed .task-checkbox {
+            background: var(--accent-success);
+            border-color: var(--accent-success);
+        }
+
+        .task-checkbox::after {
+            content: "✓";
+            color: white;
+            font-size: 14px;
+            display: none;
+        }
+
+        .task-item.completed .task-checkbox::after {
+            display: block;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-text {
+            font-size: 15px;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .task-category {
+            padding: 2px 8px;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-primary);
+            border-radius: 6px;
+        }
+
+        .task-delete {
+            width: 32px;
+            height: 32px;
+            background: rgba(239, 68, 68, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: var(--accent-danger);
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .task-delete:active {
+            background: var(--accent-danger);
+            color: white;
+        }
+
+        /* Analytics Chart */
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .chart-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-bars {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 150px;
+            gap: 8px;
+        }
+
+        .chart-bar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-bar {
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 8px 8px 4px 4px;
+            position: relative;
+            transition: all 0.5s ease;
+            min-height: 4px;
+        }
+
+        .chart-bar-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--gradient-1);
+            border-radius: 8px 8px 4px 4px;
+            transition: height 0.5s ease;
+        }
+
+        .chart-bar.good .chart-bar-fill { background: var(--gradient-4); }
+        .chart-bar.bad .chart-bar-fill { background: var(--gradient-2); }
+
+        .chart-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .chart-value {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+
+        .fab:active {
+            transform: scale(0.9);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 30px 30px 0 0;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-secondary);
+            border: none;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .category-select {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .category-option {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .category-option.selected {
+            border-color: var(--accent-primary);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: var(--gradient-1);
+            border: none;
+            color: white;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* Insights */
+        .insights {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .insight-title {
+            font-size: 14px;
+            color: var(--accent-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-text {
+            font-size: 15px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        /* Streak */
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-card);
+            border-radius: 3px;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <svg width="0" height="0">
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#667eea"/>
+                <stop offset="100%" style="stop-color:#764ba2"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div class="greeting" id="greeting">Доброе утро</div>
+                <div class="date-badge" id="currentDate"></div>
+            </div>
+            <div class="subtitle" id="subtitle">Время наказывать прокрастинацию</div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard">
+            <!-- Discipline Score -->
+            <div class="stat-card large discipline">
+                <div class="score-circle">
+                    <svg class="score-svg" viewBox="0 0 120 120">
+                        <circle class="score-bg" cx="60" cy="60" r="54"/>
+                        <circle class="score-fill" id="scoreCircle" cx="60" cy="60" r="54"/>
+                    </svg>
+                    <div class="score-text">
+                        <div class="score-number" id="disciplineScore">0</div>
+                        <div class="score-label">Дисциплина</div>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="stat-change" id="scoreChange">
+                        <span>📈</span>
+                        <span>+5% к вчерашнему дню</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sleep -->
+            <div class="stat-card sleep">
+                <div class="stat-icon">😴</div>
+                <div class="stat-label">Сон</div>
+                <div class="stat-value" id="sleepValue">0ч</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-bar" id="sleepBar" style="width: 0%"></div>
+                </div>
+                <div class="stat-change" id="sleepChange">
+                    <span>→</span>
+                    <span>цель 8ч</span>
+                </div>
+            </div>
+
+            <!-- Water -->
+            <div class="stat-card water">
+                <div class="stat-icon">💧</div>
+                <div class="stat-label">Вода</div>
+                <div class="stat-value" id="waterValue">0л</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-bar" id="waterBar" style="width: 0%"></div>
+                </div>
+                <div class="stat-change" id="waterChange">
+                    <span>→</span>
+                    <span>цель 2.5л</span>
+                </div>
+            </div>
+
+            <!-- Food -->
+            <div class="stat-card food">
+                <div class="stat-icon">🥗</div>
+                <div class="stat-label">Питание</div>
+                <div class="stat-value" id="foodValue">0/3</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-bar" id="foodBar" style="width: 0%"></div>
+                </div>
+                <div class="stat-change" id="foodChange">
+                    <span>→</span>
+                    <span>приёмы пищи</span>
+                </div>
+            </div>
+
+            <!-- Work -->
+            <div class="stat-card work">
+                <div class="stat-icon">💼</div>
+                <div class="stat-label">Работа</div>
+                <div class="stat-value" id="workValue">0ч</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-bar" id="workBar" style="width: 0%"></div>
+                </div>
+                <div class="stat-change" id="workChange">
+                    <span>→</span>
+                    <span>фокус</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="insights" id="insights">
+            <div class="insight-title">
+                <span>💡</span>
+                <span>Аналитика дня</span>
+            </div>
+            <div class="insight-text" id="insightText">
+                Начните день с выполнения важных задач. Ваш продуктивный пик обычно приходится на утро.
+            </div>
+        </div>
+
+        <!-- Daily Routine -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>🎯</span>
+                <span>Режим дня</span>
+                <span class="streak-badge" id="streakBadge">🔥 0 дней</span>
+            </div>
+        </div>
+
+        <div class="routine-grid">
+            <!-- Sleep Card -->
+            <div class="routine-card sleep">
+                <div class="routine-header">
+                    <div class="routine-info">
+                        <div class="routine-icon">😴</div>
+                        <div>
+                            <div class="routine-title">Сон</div>
+                            <div class="routine-subtitle" id="sleepStatus">Не отмечено</div>
+                        </div>
+                    </div>
+                    <div class="routine-toggle" id="sleepToggle" onclick="toggleRoutine('sleep')"></div>
+                </div>
+                <div class="routine-controls">
+                    <button class="control-btn minus" onclick="adjustValue('sleep', -0.5)">−</button>
+                    <div class="control-value" id="sleepDisplay">0ч</div>
+                    <button class="control-btn plus" onclick="adjustValue('sleep', 0.5)">+</button>
+                </div>
+            </div>
+
+            <!-- Water Card -->
+            <div class="routine-card water">
+                <div class="routine-header">
+                    <div class="routine-info">
+                        <div class="routine-icon">💧</div>
+                        <div>
+                            <div class="routine-title">Вода</div>
+                            <div class="routine-subtitle" id="waterStatus">0 / 2.5 л</div>
+                        </div>
+                    </div>
+                    <div class="routine-toggle" id="waterToggle" onclick="toggleRoutine('water')"></div>
+                </div>
+                <div class="routine-controls">
+                    <button class="control-btn minus" onclick="adjustValue('water', -0.25)">−</button>
+                    <div class="control-value" id="waterDisplay">0л</div>
+                    <button class="control-btn plus" onclick="adjustValue('water', 0.25)">+</button>
+                </div>
+            </div>
+
+            <!-- Food Card -->
+            <div class="routine-card food">
+                <div class="routine-header">
+                    <div class="routine-info">
+                        <div class="routine-icon">🥗</div>
+                        <div>
+                            <div class="routine-title">Питание</div>
+                            <div class="routine-subtitle" id="foodStatus">0 / 3 приёма</div>
+                        </div>
+                    </div>
+                    <div class="routine-toggle" id="foodToggle" onclick="toggleRoutine('food')"></div>
+                </div>
+                <div class="routine-controls">
+                    <button class="control-btn minus" onclick="adjustValue('food', -1)">−</button>
+                    <div class="control-value" id="foodDisplay">0</div>
+                    <button class="control-btn plus" onclick="adjustValue('food', 1)">+</button>
+                </div>
+            </div>
+
+            <!-- Work Card -->
+            <div class="routine-card work">
+                <div class="routine-header">
+                    <div class="routine-info">
+                        <div class="routine-icon">💼</div>
+                        <div>
+                            <div class="routine-title">Работа</div>
+                            <div class="routine-subtitle" id="workStatus">0 / 8 часов</div>
+                        </div>
+                    </div>
+                    <div class="routine-toggle" id="workToggle" onclick="toggleRoutine('work')"></div>
+                </div>
+                <div class="routine-controls">
+                    <button class="control-btn minus" onclick="adjustValue('work', -1)">−</button>
+                    <div class="control-value" id="workDisplay">0ч</div>
+                    <button class="control-btn plus" onclick="adjustValue('work', 1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>✅</span>
+                <span>Обязательные дела</span>
+            </div>
+            <button class="section-action" onclick="openModal()">+ Добавить</button>
+        </div>
+
+        <div class="tasks-container">
+            <div class="task-input-group">
+                <input type="text" class="task-input" id="quickTaskInput" placeholder="Быстрая задача..." maxlength="50">
+                <button class="task-add-btn" onclick="addQuickTask()">+</button>
+            </div>
+            <div class="task-list" id="taskList">
+                <div class="empty-state">
+                    <div class="empty-icon">📝</div>
+                    <div>Нет задач на сегодня</div>
+                    <div style="font-size: 13px; margin-top: 5px;">Добавьте первое дело</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Chart -->
+        <div class="chart-container">
+            <div class="chart-title">
+                <span>📊</span>
+                <span>Динамика недели</span>
+            </div>
+            <div class="chart-bars" id="chartBars">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="openModal()">+</button>
+
+    <!-- Add Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Новая задача</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Название задачи</label>
+                <input type="text" class="form-input" id="taskTitle" placeholder="Что нужно сделать?">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Категория</label>
+                <div class="category-select">
+                    <div class="category-option selected" data-category="work" onclick="selectCategory(this)">💼 Работа</div>
+                    <div class="category-option" data-category="health" onclick="selectCategory(this)">💪 Здоровье</div>
+                    <div class="category-option" data-category="study" onclick="selectCategory(this)">📚 Учёба</div>
+                    <div class="category-option" data-category="personal" onclick="selectCategory(this)">👤 Личное</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Время (опционально)</label>
+                <input type="time" class="form-input" id="taskTime">
+            </div>
+
+            <button class="btn-primary" onclick="addTask()">Создать задачу</button>
+        </div>
+    </div>
+
+    <script>
+        // Data Store
+        let data = JSON.parse(localStorage.getItem('disciplineData')) || {
+            today: {
+                sleep: { value: 0, target: 8, completed: false },
+                water: { value: 0, target: 2.5, completed: false },
+                food: { value: 0, target: 3, completed: false },
+                work: { value: 0, target: 8, completed: false },
+                tasks: [],
+                date: new Date().toDateString()
+            },
+            history: [],
+            streak: 0,
+            lastActive: new Date().toDateString()
+        };
+
+        let selectedCategory = 'work';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkNewDay();
+            updateGreeting();
+            updateDate();
+            loadData();
+            renderTasks();
+            updateDashboard();
+            updateChart();
+            updateInsights();
+            checkStreak();
+        });
+
+        // Check if new day
+        function checkNewDay() {
+            const today = new Date().toDateString();
+            if (data.today.date !== today) {
+                // Save yesterday to history
+                const yesterdayScore = calculateScore();
+                data.history.push({
+                    date: data.today.date,
+                    score: yesterdayScore,
+                    sleep: data.today.sleep.value,
+                    water: data.today.water.value,
+                    food: data.today.food.value,
+                    work: data.today.work.value
+                });
+
+                // Keep only last 7 days
+                if (data.history.length > 7) {
+                    data.history.shift();
+                }
+
+                // Reset today
+                data.today = {
+                    sleep: { value: 0, target: 8, completed: false },
+                    water: { value: 0, target: 2.5, completed: false },
+                    food: { value: 0, target: 3, completed: false },
+                    work: { value: 0, target: 8, completed: false },
+                    tasks: [],
+                    date: today
+                };
+
+                // Check streak
+                const lastDate = new Date(data.lastActive);
+                const diffDays = Math.floor((new Date() - lastDate) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1 && yesterdayScore >= 70) {
+                    data.streak++;
+                } else if (diffDays > 1 || yesterdayScore < 70) {
+                    data.streak = 0;
+                }
+
+                data.lastActive = today;
+                saveData();
+            }
+        }
+
+        // Update greeting based on time
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = 'Доброй ночи';
+            let subtitle = 'Время отдыхать и восстанавливаться';
+
+            if (hour >= 5 && hour < 12) {
+                greeting = 'Доброе утро';
+                subtitle = 'Начните день с победы над собой';
+            } else if (hour >= 12 && hour < 17) {
+                greeting = 'Добрый день';
+                subtitle = 'Пик продуктивности — используйте его';
+            } else if (hour >= 17 && hour < 22) {
+                greeting = 'Добрый вечер';
+                subtitle = 'Подведите итоги и подготовьтесь к завтра';
+            }
+
+            document.getElementById('greeting').textContent = greeting;
+            document.getElementById('subtitle').textContent = subtitle;
+        }
+
+        function updateDate() {
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ru-RU', options);
+        }
+
+        // Data Management
+        function loadData() {
+            updateRoutineDisplay('sleep');
+            updateRoutineDisplay('water');
+            updateRoutineDisplay('food');
+            updateRoutineDisplay('work');
+        }
+
+        function saveData() {
+            localStorage.setItem('disciplineData', JSON.stringify(data));
+        }
+
+        // Routine Controls
+        function adjustValue(type, delta) {
+            const item = data.today[type];
+            let newValue = item.value + delta;
+
+            if (type === 'sleep') {
+                newValue = Math.max(0, Math.min(12, newValue));
+            } else if (type === 'water') {
+                newValue = Math.max(0, Math.min(5, newValue));
+            } else if (type === 'food') {
+                newValue = Math.max(0, Math.min(6, newValue));
+            } else if (type === 'work') {
+                newValue = Math.max(0, Math.min(16, newValue));
+            }
+
+            item.value = newValue;
+            item.completed = newValue >= item.target;
+
+            updateRoutineDisplay(type);
+            updateDashboard();
+            saveData();
+            updateInsights();
+        }
+
+        function toggleRoutine(type) {
+            const item = data.today[type];
+            item.completed = !item.completed;
+
+            if (item.completed && item.value === 0) {
+                item.value = item.target;
+            }
+
+            updateRoutineDisplay(type);
+            updateDashboard();
+            saveData();
+        }
+
+        function updateRoutineDisplay(type) {
+            const item = data.today[type];
+            const toggle = document.getElementById(type + 'Toggle');
+            const display = document.getElementById(type + 'Display');
+            const status = document.getElementById(type + 'Status');
+
+            toggle.classList.toggle('active', item.completed);
+
+            let displayText = '';
+            let statusText = '';
+
+            if (type === 'sleep') {
+                displayText = item.value + 'ч';
+                statusText = item.completed ? '✅ Норма сна' : `${item.value} / ${item.target} часов`;
+            } else if (type === 'water') {
+                displayText = item.value + 'л';
+                statusText = item.completed ? '✅ Норма воды' : `${item.value} / ${item.target} л`;
+            } else if (type === 'food') {
+                displayText = item.value;
+                statusText = item.completed ? '✅ Питание в норме' : `${item.value} / ${item.target} приёма`;
+            } else if (type === 'work') {
+                displayText = item.value + 'ч';
+                statusText = item.completed ? '✅ Работа завершена' : `${item.value} / ${item.target} часов`;
+            }
+
+            display.textContent = displayText;
+            status.textContent = statusText;
+        }
+
+        // Dashboard Updates
+        function updateDashboard() {
+            const score = calculateScore();
+
+            // Update main score
+            document.getElementById('disciplineScore').textContent = score;
+            const circle = document.getElementById('scoreCircle');
+            const circumference = 339.292;
+            const offset = circumference - (score / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            // Update score change
+            const yesterday = data.history[data.history.length - 1];
+            const changeEl = document.getElementById('scoreChange');
+            if (yesterday) {
+                const diff = score - yesterday.score;
+                const sign = diff >= 0 ? '+' : '';
+                const icon = diff >= 0 ? '📈' : '📉';
+                changeEl.innerHTML = `<span>${icon}</span><span>${sign}${diff}% к вчера</span>`;
+                changeEl.className = 'stat-change ' + (diff >= 0 ? 'positive' : 'negative');
+            }
+
+            // Update stat cards
+            updateStatCard('sleep', data.today.sleep.value, data.today.sleep.target, 'ч');
+            updateStatCard('water', data.today.water.value, data.today.water.target, 'л');
+            updateStatCard('food', data.today.food.value, data.today.food.target, '');
+            updateStatCard('work', data.today.work.value, data.today.work.target, 'ч');
+
+            // Update streak
+            document.getElementById('streakBadge').innerHTML = `🔥 ${data.streak} дней`;
+        }
+
+        function updateStatCard(type, value, target, unit) {
+            const percentage = Math.min(100, (value / target) * 100);
+            document.getElementById(type + 'Value').textContent = value + unit;
+            document.getElementById(type + 'Bar').style.width = percentage + '%';
+
+            // Change indicator
+            const yesterday = data.history[data.history.length - 1];
+            if (yesterday) {
+                const yesterdayValue = yesterday[type];
+                const diff = value - yesterdayValue;
+                const changeEl = document.getElementById(type + 'Change');
+
+                if (Math.abs(diff) > 0.1) {
+                    const sign = diff > 0 ? '+' : '';
+                    const arrow = diff > 0 ? '↑' : '↓';
+                    changeEl.innerHTML = `<span>${arrow}</span><span>${sign}${diff.toFixed(1)}${unit}</span>`;
+                    changeEl.className = 'stat-change ' + (diff > 0 ? 'positive' : 'negative');
+                }
+            }
+        }
+
+        function calculateScore() {
+            const tasks = data.today.tasks;
+            const completedTasks = tasks.filter(t => t.completed).length;
+            const taskScore = tasks.length > 0 ? (completedTasks / tasks.length) * 40 : 0;
+
+            const sleepScore = Math.min(100, (data.today.sleep.value / data.today.sleep.target) * 100) * 0.15;
+            const waterScore = Math.min(100, (data.today.water.value / data.today.water.target) * 100) * 0.15;
+            const foodScore = Math.min(100, (data.today.food.value / data.today.food.target) * 100) * 0.15;
+            const workScore = Math.min(100, (data.today.work.value / data.today.work.target) * 100) * 0.15;
+
+            return Math.round(taskScore + sleepScore + waterScore + foodScore + workScore);
+        }
+
+        // Tasks
+        function openModal() {
+            document.getElementById('taskModal').classList.add('show');
+            document.getElementById('taskTitle').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.remove('show');
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskTime').value = '';
+        }
+
+        function selectCategory(el) {
+            document.querySelectorAll('.category-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedCategory = el.dataset.category;
+        }
+
+        function addTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            const time = document.getElementById('taskTime').value;
+
+            if (!title) return;
+
+            const task = {
+                id: Date.now(),
+                title: title,
+                category: selectedCategory,
+                time: time,
+                completed: false
+            };
+
+            data.today.tasks.push(task);
+            saveData();
+            renderTasks();
+            updateDashboard();
+            closeModal();
+            updateInsights();
+        }
+
+        function addQuickTask() {
+            const input = document.getElementById('quickTaskInput');
+            const title = input.value.trim();
+
+            if (!title) return;
+
+            const task = {
+                id: Date.now(),
+                title: title,
+                category: 'personal',
+                time: '',
+                completed: false
+            };
+
+            data.today.tasks.push(task);
+            saveData();
+            renderTasks();
+            updateDashboard();
+            input.value = '';
+            updateInsights();
+        }
+
+        function toggleTask(id) {
+            const task = data.today.tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveData();
+                renderTasks();
+                updateDashboard();
+                updateInsights();
+            }
+        }
+
+        function deleteTask(id) {
+            data.today.tasks = data.today.tasks.filter(t => t.id !== id);
+            saveData();
+            renderTasks();
+            updateDashboard();
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            const tasks = data.today.tasks;
+
+            if (tasks.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <div>Нет задач на сегодня</div>
+                        <div style="font-size: 13px; margin-top: 5px;">Добавьте первое дело</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const categoryEmojis = {
+                work: '💼',
+                health: '💪',
+                study: '📚',
+                personal: '👤'
+            };
+
+            const categoryNames = {
+                work: 'Работа',
+                health: 'Здоровье',
+                study: 'Учёба',
+                personal: 'Личное'
+            };
+
+            list.innerHTML = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <div class="task-checkbox" onclick="toggleTask(${task.id})"></div>
+                    <div class="task-content">
+                        <div class="task-text">${escapeHtml(task.title)}</div>
+                        <div class="task-meta">
+                            <span class="task-category">${categoryEmojis[task.category]} ${categoryNames[task.category]}</span>
+                            ${task.time ? `<span>⏰ ${task.time}</span>` : ''}
+                        </div>
+                    </div>
+                    <button class="task-delete" onclick="deleteTask(${task.id})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Chart
+        function updateChart() {
+            const container = document.getElementById('chartBars');
+            const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            const today = new Date().getDay();
+            const adjustedToday = today === 0 ? 6 : today - 1;
+
+            let html = '';
+
+            for (let i = 0; i < 7; i++) {
+                const dayIndex = (adjustedToday - 6 + i + 7) % 7;
+                const historyIndex = i - (6 - data.history.length);
+
+                let score = 0;
+                let isToday = i === 6;
+
+                if (isToday) {
                     score = calculateScore();
                 } else if (historyIndex >= 0 && data.history[historyIndex]) {
                     score = data.history[historyIndex].score;
@@ -44,7 +1595,7 @@ if (isToday) {
             }
 
             if (totalTasks > 0 && completedTasks === 0) {
-                insight = '⚡️ У вас есть невыполненные задачи. Выберите самую простую и сделайте её!';
+                insight = '⚡ У вас есть невыполненные задачи. Выберите самую простую и сделайте её!';
             }
 
             document.getElementById('insightText').textContent = insight;
