@@ -1,0 +1,75 @@
+if (isToday) {
+                    score = calculateScore();
+                } else if (historyIndex >= 0 && data.history[historyIndex]) {
+                    score = data.history[historyIndex].score;
+                }
+
+                const height = Math.max(4, (score / 100) * 120);
+                const isGood = score >= 70;
+
+                html += `
+                    <div class="chart-bar-wrapper">
+                        <div class="chart-value">${score}</div>
+                        <div class="chart-bar ${isGood ? 'good' : 'bad'}" style="height: ${height}px;">
+                            <div class="chart-bar-fill" style="height: 100%;"></div>
+                        </div>
+                        <div class="chart-label">${isToday ? 'Сег' : days[dayIndex]}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Insights
+        function updateInsights() {
+            const score = calculateScore();
+            const completedTasks = data.today.tasks.filter(t => t.completed).length;
+            const totalTasks = data.today.tasks.length;
+
+            let insight = '';
+
+            if (score >= 90) {
+                insight = '🌟 Отличный день! Вы на пике дисциплины. Так держать!';
+            } else if (score >= 70) {
+                insight = '👍 Хороший результат! Немного усилий — и будет идеально.';
+            } else if (score >= 50) {
+                insight = '💪 Средний результат. Попробуйте завершить ещё несколько задач.';
+            } else {
+                insight = '🚀 Начните с малого — выполните одну важную задачу прямо сейчас!';
+            }
+
+            if (data.today.water.value < 1) {
+                insight += ' Не забудьте выпить воды!';
+            }
+
+            if (totalTasks > 0 && completedTasks === 0) {
+                insight = '⚡️ У вас есть невыполненные задачи. Выберите самую простую и сделайте её!';
+            }
+
+            document.getElementById('insightText').textContent = insight;
+        }
+
+        function checkStreak() {
+            // Streak logic handled in checkNewDay
+        }
+
+        // Event Listeners
+        document.getElementById('quickTaskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addQuickTask();
+        });
+
+        document.getElementById('taskTitle').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // Close modal on outside click
+        document.getElementById('taskModal').addEventListener('click', (e) => {
+            if (e.target.id === 'taskModal') closeModal();
+        });
+
+        // Auto-save every 30 seconds
+        setInterval(saveData, 30000);
+    </script>
+</body>
+</html>
